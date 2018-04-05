@@ -1,0 +1,117 @@
+
+mysql:
+  build: /home/hali/Workspace/b-docker/docker/mysql
+  ports:
+    - 33061:3306
+  environment:
+    MYSQL_ROOT_PASSWORD: 111
+    MYSQL_DATABASE: apvideo
+  volumes:
+    - /home/hali/Workspace/b-docker/data/mysql:/var/lib/mysql
+
+redis:
+  build: /home/hali/Workspace/b-docker/docker/redis
+  command: redis-server /etc/redis/redis.conf
+  ports:
+    - 63791:6379
+
+ffmpeg:
+  build: /home/hali/Workspace/b-docker/docker/ffmpeg
+  ports:
+    - 8084:80
+  links:
+    - mysql
+    - redis
+    - xunsearch
+  volumes:
+    # 转码服务器代码路径
+    # 格式 => 本地目录绝对路径:/usr/local/code/apvideo-convert
+    - /home/hali/Workspace/b-convert:/usr/local/code/apvideo-convert
+    - /home/hali/Workspace/b-docker/data:/usr/local/code/apvideo-convert/storage/data
+
+web-img:
+  build: /home/hali/Workspace/b-docker/docker/web-img
+  ports:
+    - 8082:80
+  command: nginx -g 'daemon off;'
+  volumes:
+    - /home/hali/Workspace/b-docker/data/image:/usr/share/nginx/html
+
+web-rtmp:
+  build: /home/hali/Workspace/b-docker/docker/web-rtmp
+  ports:
+    - 8083:80
+  links:
+    - redis
+  volumes:
+    - /home/hali/Workspace/b-docker/data/video/released:/usr/local/openresty/nginx/html
+
+web-portal:
+  build: /home/hali/Workspace/b-docker/docker/web-main
+  ports:
+    - 8080:80
+  links:
+    - mysql
+    - redis
+    - web-rtmp
+    - xunsearch
+  volumes:
+    - /home/hali/Workspace/b-portal:/usr/local/code/apvideo
+    - /home/hali/Workspace/b-docker/data:/usr/local/code/apvideo/storage/data
+
+web-portal2:
+  build: /home/hali/Workspace/b-docker/docker/web-main
+  ports:
+    - 8088:80
+  links:
+    - mysql
+    - redis
+    - web-rtmp
+    - xunsearch
+  volumes:
+    - /home/hali/Workspace/c-portal:/usr/local/code/apvideo
+    - /home/hali/Workspace/b-docker/data:/usr/local/code/apvideo/storage/data
+
+web-admin:
+  build: /home/hali/Workspace/b-docker/docker/web-main
+  ports:
+    - 8081:80
+  links:
+    - mysql
+    - redis
+    - xunsearch
+  volumes:
+    - /home/hali/Workspace/b-admin:/usr/local/code/apvideo
+    - /home/hali/Workspace/b-docker/data:/usr/local/code/apvideo/storage/data
+
+video-download:
+    build: /home/hali/Workspace/b-docker/docker/video-download
+    ports:
+        - 8085:80
+    links:
+        - redis
+    volumes:
+        - /home/hali/Workspace/b-docker/data/video/released:/usr/local/openresty/nginx/html/released
+
+xunsearch:
+    build: /home/hali/Workspace/b-docker/docker/xunsearch
+    ports:
+        - 8086:8383
+        - 8087:8384
+
+web-vip-rtmp:
+  build: /home/hali/Workspace/b-docker/docker/video-vip-path
+  ports:
+    - 8089:80
+  volumes:
+    - /home/hali/Workspace/b-docker/data/video/released:/usr/local/openresty/nginx/html
+
+web-rtmp-c-key:
+  build: /home/hali/Workspace/b-docker/docker/web-rtmp-c
+  ports:
+    - 9091:80
+  volumes:
+    - /home/hali/Workspace/b-docker/data/video/released:/usr/local/openresty/nginx/html
+
+
+
